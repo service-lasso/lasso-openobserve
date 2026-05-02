@@ -1,4 +1,3 @@
-.harness/
 dist/
 output/
-verify/service-harness.ci.json
+node_modules/

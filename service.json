@@ -1,134 +1,110 @@
 {
-  "id": "echo-service",
-  "name": "Echo Service",
-  "description": "Minimal sample service used to prove the service-template contract.",
-  "enabled": true,
-  "version": "0.1.0",
-  "logoutput": true,
-  "icon": [
+  "id": "openobserve",
+  "name": "OpenObserve",
+  "description": "Release-backed OpenObserve observability service for app-owned logs, metrics, and traces.",
+  "version": "v0.10.8-rc4",
+  "enabled": false,
+  "ports": {
+    "service": 5080,
+    "grpc": 5081
+  },
+  "env": {
+    "ZO_HTTP_ADDR": "127.0.0.1",
+    "ZO_HTTP_PORT": "${SERVICE_PORT}",
+    "ZO_GRPC_ADDR": "127.0.0.1",
+    "ZO_GRPC_PORT": "${SERVICE_PORT_GRPC}",
+    "ZO_DATA_DIR": "${SERVICE_DATA_PATH}",
+    "ZO_LOCAL_MODE": "true",
+    "ZO_LOCAL_MODE_STORAGE": "disk",
+    "ZO_ROOT_USER_EMAIL": "root@service-lasso.local",
+    "ZO_ROOT_USER_PASSWORD": "service-lasso-openobserve",
+    "ZO_HEALTH_CHECK_ENABLED": "true"
+  },
+  "globalenv": {
+    "OPENOBSERVE_URL": "http://${ZO_HTTP_ADDR}:${ZO_HTTP_PORT}",
+    "OPENOBSERVE_PORT": "${ZO_HTTP_PORT}",
+    "OPENOBSERVE_GRPC_PORT": "${ZO_GRPC_PORT}"
+  },
+  "urls": [
     {
-      "provider": "lucide",
-      "name": "terminal"
+      "label": "OpenObserve UI",
+      "url": "http://${ZO_HTTP_ADDR}:${ZO_HTTP_PORT}",
+      "kind": "local"
+    },
+    {
+      "label": "health",
+      "url": "http://${ZO_HTTP_ADDR}:${ZO_HTTP_PORT}/healthz",
+      "kind": "local"
     }
   ],
-  "servicetype": 50,
-  "servicelocation": 10,
-  "logo": [],
-  "logs": {
-    "default": {
-      "path": "logs/echo-service.log"
-    }
-  },
-  "meta": {
-    "developers": [
-      {
-        "name": "Service Lasso contributors"
-      }
-    ],
-    "license": "Apache-2.0",
-    "repository": {
-      "type": "git",
-      "url": "https://github.com/service-lasso/service-template.git"
-    },
-    "websiteUrl": "https://github.com/service-lasso/service-template",
-    "documentationUrl": "https://github.com/service-lasso/service-template/blob/main/README.md",
-    "issuesUrl": "https://github.com/service-lasso/service-template/issues",
-    "support": {
-      "issuesUrl": "https://github.com/service-lasso/service-template/issues"
-    },
-    "links": {
-      "repository": "https://github.com/service-lasso/service-template",
-      "issues": "https://github.com/service-lasso/service-template/issues",
-      "documentation": "https://github.com/service-lasso/service-template/blob/main/README.md"
-    },
-    "tags": [
-      "service-lasso",
-      "template",
-      "example-service"
-    ]
-  },
   "artifact": {
     "kind": "archive",
     "source": {
       "type": "github-release",
-      "repo": "service-lasso/service-template",
+      "repo": "service-lasso/lasso-openobserve",
       "channel": "latest"
     },
     "platforms": {
       "win32": {
-        "assetName": "echo-service-win32.zip",
+        "assetName": "lasso-openobserve-v0.10.8-rc4-win32.zip",
         "archiveType": "zip",
-        "command": "./echo-service.exe",
-        "args": []
-      },
-      "darwin": {
-        "assetName": "echo-service-darwin.tar.gz",
-        "archiveType": "tar.gz",
-        "command": "./echo-service",
+        "command": "./openobserve.exe",
         "args": []
       },
       "linux": {
-        "assetName": "echo-service-linux.tar.gz",
+        "assetName": "lasso-openobserve-v0.10.8-rc4-linux.tar.gz",
         "archiveType": "tar.gz",
-        "command": "./echo-service",
+        "command": "./openobserve",
         "args": []
       },
-      "default": {
-        "assetName": "echo-service-win32.zip",
-        "archiveType": "zip",
-        "command": "./echo-service.exe",
+      "darwin": {
+        "assetName": "lasso-openobserve-v0.10.8-rc4-darwin.tar.gz",
+        "archiveType": "tar.gz",
+        "command": "./openobserve",
         "args": []
       }
     }
   },
-  "actions": {
-    "install": {
-      "description": "Acquire or unpack the packaged echo-service runtime artifact.",
-      "mode": "converge-install",
-      "idempotent": true
-    },
-    "config": {
-      "description": "Materialize deployment-local echo-service config and env values.",
-      "mode": "converge-config",
-      "idempotent": true
-    },
-    "update": {
-      "description": "Apply a newer release artifact and reconcile update-time changes before restart.",
-      "mode": "converge-update",
-      "idempotent": true
-    },
-    "start": {
-      "description": "Start the sample echo service.",
-      "mode": "runtime-start",
-      "idempotent": true
-    },
-    "stop": {
-      "description": "Stop the sample echo service gracefully.",
-      "mode": "runtime-stop",
-      "idempotent": true
-    },
-    "restart": {
-      "description": "Restart the sample echo service after config or update changes.",
-      "mode": "runtime-restart",
-      "idempotent": false
-    },
-    "rollback": {
-      "description": "Restore the previously deployed artifact if an update fails validation.",
-      "mode": "state-rollback",
-      "idempotent": false
-    }
+  "commandline": {
+    "win32": "${SERVICE_ARTIFACT_ROOT}/openobserve.exe",
+    "linux": "${SERVICE_ARTIFACT_ROOT}/openobserve",
+    "darwin": "${SERVICE_ARTIFACT_ROOT}/openobserve"
   },
-  "execconfig": {
-    "serviceorder": 100,
-    "serviceport": 0,
-    "execcwd": "runtime",
-    "executable": "echo-service",
-    "env": {
-      "ECHO_MESSAGE": "hello from service-template"
+  "install": {
+    "files": [
+      {
+        "path": "./runtime/data/.keep",
+        "content": ""
+      }
+    ]
+  },
+  "healthcheck": {
+    "type": "http",
+    "url": "http://${ZO_HTTP_ADDR}:${ZO_HTTP_PORT}/healthz",
+    "expected_status": 200,
+    "retries": 180,
+    "interval": 500
+  },
+  "updates": {
+    "enabled": true,
+    "mode": "notify",
+    "track": "latest",
+    "checkIntervalSeconds": 86400
+  },
+  "meta": {
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/service-lasso/lasso-openobserve.git"
     },
-    "depend_on": [],
-    "healthcheck": {
-      "type": "process"
-    }
+    "documentationUrl": "https://github.com/service-lasso/lasso-openobserve/blob/main/README.md",
+    "issuesUrl": "https://github.com/service-lasso/lasso-openobserve/issues",
+    "tags": [
+      "service-lasso",
+      "openobserve",
+      "observability",
+      "logs",
+      "metrics",
+      "traces"
+    ]
   }
 }
