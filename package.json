@@ -1,0 +1,13 @@
+{
+  "name": "lasso-openobserve",
+  "version": "0.10.8-rc4",
+  "private": true,
+  "description": "Release-backed OpenObserve service package for Service Lasso.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "package": "node scripts/package.mjs",
+    "test": "node scripts/verify.mjs",
+    "release:verify": "node scripts/verify.mjs"
+  }
+}
