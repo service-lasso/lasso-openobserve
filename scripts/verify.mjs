@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { mkdir, readFile, rm } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm } from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -77,13 +77,94 @@ async function stopChild(child) {
   ]);
 }
 
+async function findManifestFiles(dir) {
+  const ignored = new Set([".git", "node_modules", "output", "dist"]);
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files = [];
+
+  for (const entry of entries) {
+    if (ignored.has(entry.name)) {
+      continue;
+    }
+
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...await findManifestFiles(fullPath));
+    } else if (entry.name === "service.json" || fullPath.endsWith(path.join("docs", "reference", "EXAMPLE-service.json"))) {
+      files.push(fullPath);
+    }
+  }
+
+  return files;
+}
+
+function findSingularHealthcheckKeys(value, trail = []) {
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) => findSingularHealthcheckKeys(item, [...trail, String(index)]));
+  }
+
+  return Object.entries(value).flatMap(([key, child]) => {
+    const childTrail = [...trail, key];
+    const legacyHealthKey = "health" + "check";
+    const matches = key === legacyHealthKey ? [childTrail.join(".")] : [];
+    return [...matches, ...findSingularHealthcheckKeys(child, childTrail)];
+  });
+}
+
+function validateHealthchecks(manifest, manifestPath) {
+  const singularKeys = findSingularHealthcheckKeys(manifest);
+  if (singularKeys.length > 0) {
+    throw new Error(`${path.relative(repoRoot, manifestPath)} still declares legacy single-check keys: ${singularKeys.join(", ")}`);
+  }
+
+  if (manifest.healthchecks === undefined) {
+    return;
+  }
+
+  if (!Array.isArray(manifest.healthchecks) || manifest.healthchecks.length === 0) {
+    throw new Error(`${path.relative(repoRoot, manifestPath)} must declare a non-empty healthchecks array.`);
+  }
+
+  const ids = new Set();
+  for (const check of manifest.healthchecks) {
+    if (!check || typeof check !== "object") {
+      throw new Error(`${path.relative(repoRoot, manifestPath)} contains a non-object healthchecks item.`);
+    }
+    if (typeof check.id !== "string" || check.id.trim() === "") {
+      throw new Error(`${path.relative(repoRoot, manifestPath)} contains a healthchecks item without a stable id.`);
+    }
+    if (ids.has(check.id)) {
+      throw new Error(`${path.relative(repoRoot, manifestPath)} contains duplicate healthchecks id "${check.id}".`);
+    }
+    ids.add(check.id);
+    if (typeof check.type !== "string" || check.type.trim() === "") {
+      throw new Error(`${path.relative(repoRoot, manifestPath)} healthchecks item "${check.id}" is missing type.`);
+    }
+  }
+}
+
+for (const manifestPath of await findManifestFiles(repoRoot)) {
+  validateHealthchecks(JSON.parse(await readFile(manifestPath, "utf8")), manifestPath);
+}
+
 const serviceManifest = JSON.parse(await readFile(path.join(repoRoot, "service.json"), "utf8"));
 if (serviceManifest.id !== "openobserve" || serviceManifest.version !== version) {
   throw new Error(`Unexpected service manifest identity: ${JSON.stringify({ id: serviceManifest.id, version: serviceManifest.version })}`);
 }
 
-if (serviceManifest.healthcheck?.type !== "http" || serviceManifest.ports?.service !== 5080) {
-  throw new Error(`OpenObserve service.json health/ports drifted: ${JSON.stringify(serviceManifest.healthcheck)}`);
+const [openObserveHealthcheck] = serviceManifest.healthchecks ?? [];
+if (
+  openObserveHealthcheck?.id !== "openobserve-http-ready"
+  || openObserveHealthcheck.type !== "http"
+  || openObserveHealthcheck.url !== "http://${ZO_HTTP_ADDR}:${ZO_HTTP_PORT}/healthz"
+  || openObserveHealthcheck.expected_status !== 200
+  || serviceManifest.ports?.service !== 5080
+) {
+  throw new Error(`OpenObserve service.json healthchecks/ports drifted: ${JSON.stringify(serviceManifest.healthchecks)}`);
 }
 
 const artifact = await packageOpenObserve(platform);
