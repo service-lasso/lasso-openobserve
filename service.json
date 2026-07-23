@@ -78,13 +78,16 @@
       }
     ]
   },
-  "healthcheck": {
-    "type": "http",
-    "url": "http://${ZO_HTTP_ADDR}:${ZO_HTTP_PORT}/healthz",
-    "expected_status": 200,
-    "retries": 180,
-    "interval": 500
-  },
+  "healthchecks": [
+    {
+      "id": "openobserve-http-ready",
+      "type": "http",
+      "url": "http://${ZO_HTTP_ADDR}:${ZO_HTTP_PORT}/healthz",
+      "expected_status": 200,
+      "retries": 180,
+      "interval": 500
+    }
+  ],
   "updates": {
     "enabled": true,
     "mode": "notify",

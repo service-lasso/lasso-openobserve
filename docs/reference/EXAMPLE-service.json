@@ -30,9 +30,12 @@
     "env": {
       "ECHO_MESSAGE": "hello from service-template"
     },
-    "depend_on": [],
-    "healthcheck": {
+    "depend_on": []
+  },
+  "healthchecks": [
+    {
+      "id": "echo-service-process-ready",
       "type": "process"
     }
-  }
+  ]
 }

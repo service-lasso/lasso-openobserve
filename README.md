@@ -10,7 +10,7 @@ OpenObserve is an app-owned observability service for local logs, metrics, trace
 - Upstream version: `v0.10.8-rc4`
 - Default HTTP port: `5080`
 - Default gRPC port: `5081`
-- Healthcheck: `GET http://127.0.0.1:${SERVICE_PORT}/healthz`
+- Healthchecks: `openobserve-http-ready` probes `GET http://127.0.0.1:${SERVICE_PORT}/healthz`
 - First package platforms: Windows, Linux, macOS arm64
 
 ## Release Artifacts
