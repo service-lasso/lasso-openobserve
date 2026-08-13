@@ -156,15 +156,44 @@ if (serviceManifest.id !== "openobserve" || serviceManifest.version !== version)
   throw new Error(`Unexpected service manifest identity: ${JSON.stringify({ id: serviceManifest.id, version: serviceManifest.version })}`);
 }
 
+if (serviceManifest.ports !== undefined || serviceManifest.urls !== undefined) {
+  throw new Error("OpenObserve service.json must use canonical endpoints[] authoring, not legacy ports or urls.");
+}
+
+const endpointById = new Map((serviceManifest.endpoints ?? []).map((endpoint) => [endpoint.id, endpoint]));
+const serviceEndpoint = endpointById.get("service");
+const grpcEndpoint = endpointById.get("grpc");
+const uiEndpoint = endpointById.get("ui");
+const healthEndpoint = endpointById.get("health");
+if (
+  serviceEndpoint?.kind !== "network"
+  || serviceEndpoint.protocol !== "http"
+  || serviceEndpoint.bind !== "127.0.0.1"
+  || serviceEndpoint.port?.default !== 5080
+  || serviceEndpoint.port?.strategy !== "preferred"
+  || grpcEndpoint?.kind !== "network"
+  || grpcEndpoint.protocol !== "tcp"
+  || grpcEndpoint.bind !== "127.0.0.1"
+  || grpcEndpoint.port?.default !== 5081
+  || grpcEndpoint.port?.strategy !== "preferred"
+  || uiEndpoint?.kind !== "url"
+  || uiEndpoint.target !== "service"
+  || uiEndpoint.url !== "http://${endpoint.service.bind}:${endpoint.service.port}"
+  || healthEndpoint?.kind !== "url"
+  || healthEndpoint.target !== "service"
+  || healthEndpoint.url !== "http://${endpoint.service.bind}:${endpoint.service.port}/healthz"
+) {
+  throw new Error(`OpenObserve service.json endpoints drifted: ${JSON.stringify(serviceManifest.endpoints)}`);
+}
+
 const [openObserveHealthcheck] = serviceManifest.healthchecks ?? [];
 if (
   openObserveHealthcheck?.id !== "openobserve-http-ready"
   || openObserveHealthcheck.type !== "http"
-  || openObserveHealthcheck.url !== "http://${ZO_HTTP_ADDR}:${ZO_HTTP_PORT}/healthz"
+  || openObserveHealthcheck.url !== "${endpoint.health.url}"
   || openObserveHealthcheck.expected_status !== 200
-  || serviceManifest.ports?.service !== 5080
 ) {
-  throw new Error(`OpenObserve service.json healthchecks/ports drifted: ${JSON.stringify(serviceManifest.healthchecks)}`);
+  throw new Error(`OpenObserve service.json healthchecks drifted: ${JSON.stringify(serviceManifest.healthchecks)}`);
 }
 
 const artifact = await packageOpenObserve(platform);

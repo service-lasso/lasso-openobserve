@@ -4,15 +4,59 @@
   "description": "Release-backed OpenObserve observability service for app-owned logs, metrics, and traces.",
   "version": "v0.10.8-rc4",
   "enabled": false,
-  "ports": {
-    "service": 5080,
-    "grpc": 5081
-  },
+  "endpoints": [
+    {
+      "id": "service",
+      "kind": "network",
+      "label": "OpenObserve HTTP",
+      "direction": "inbound",
+      "transport": "tcp",
+      "protocol": "http",
+      "bind": "127.0.0.1",
+      "port": {
+        "default": 5080,
+        "strategy": "preferred"
+      },
+      "exposure": "local",
+      "primary": true
+    },
+    {
+      "id": "grpc",
+      "kind": "network",
+      "label": "OpenObserve gRPC",
+      "direction": "inbound",
+      "transport": "tcp",
+      "protocol": "tcp",
+      "bind": "127.0.0.1",
+      "port": {
+        "default": 5081,
+        "strategy": "preferred"
+      },
+      "exposure": "local"
+    },
+    {
+      "id": "ui",
+      "kind": "url",
+      "label": "OpenObserve UI",
+      "target": "service",
+      "url": "http://${endpoint.service.bind}:${endpoint.service.port}",
+      "exposure": "local",
+      "primary": true
+    },
+    {
+      "id": "health",
+      "kind": "url",
+      "label": "health",
+      "target": "service",
+      "url": "http://${endpoint.service.bind}:${endpoint.service.port}/healthz",
+      "exposure": "local"
+    }
+  ],
   "env": {
-    "ZO_HTTP_ADDR": "127.0.0.1",
-    "ZO_HTTP_PORT": "${SERVICE_PORT}",
-    "ZO_GRPC_ADDR": "127.0.0.1",
-    "ZO_GRPC_PORT": "${SERVICE_PORT_GRPC}",
+    "ZO_HTTP_ADDR": "${endpoint.service.bind}",
+    "ZO_HTTP_PORT": "${endpoint.service.port}",
+    "ZO_GRPC_ADDR": "${endpoint.grpc.bind}",
+    "ZO_GRPC_PORT": "${endpoint.grpc.port}",
     "ZO_DATA_DIR": "${SERVICE_DATA_PATH}",
     "ZO_LOCAL_MODE": "true",
     "ZO_LOCAL_MODE_STORAGE": "disk",
@@ -21,22 +65,10 @@
     "ZO_HEALTH_CHECK_ENABLED": "true"
   },
   "globalenv": {
-    "OPENOBSERVE_URL": "http://${ZO_HTTP_ADDR}:${ZO_HTTP_PORT}",
-    "OPENOBSERVE_PORT": "${ZO_HTTP_PORT}",
-    "OPENOBSERVE_GRPC_PORT": "${ZO_GRPC_PORT}"
+    "OPENOBSERVE_URL": "${endpoint.ui.url}",
+    "OPENOBSERVE_PORT": "${endpoint.service.port}",
+    "OPENOBSERVE_GRPC_PORT": "${endpoint.grpc.port}"
   },
-  "urls": [
-    {
-      "label": "OpenObserve UI",
-      "url": "http://${ZO_HTTP_ADDR}:${ZO_HTTP_PORT}",
-      "kind": "local"
-    },
-    {
-      "label": "health",
-      "url": "http://${ZO_HTTP_ADDR}:${ZO_HTTP_PORT}/healthz",
-      "kind": "local"
-    }
-  ],
   "artifact": {
     "kind": "archive",
     "source": {
@@ -82,7 +114,7 @@
     {
       "id": "openobserve-http-ready",
       "type": "http",
-      "url": "http://${ZO_HTTP_ADDR}:${ZO_HTTP_PORT}/healthz",
+      "url": "${endpoint.health.url}",
       "expected_status": 200,
       "retries": 180,
       "interval": 500
