@@ -4,6 +4,13 @@
 
 OpenObserve is an app-owned observability service for local logs, metrics, traces, and UI-driven inspection. It is disabled by default because retained telemetry data, credentials, and routing belong to the consuming app.
 
+For the canonical app-owned integration workflow, see [Add OpenObserve or
+SOARCA to an app](https://service-lasso.github.io/service-lasso/components/app-owned-service-workflows).
+That Core guide is supplied by dependent PR
+[service-lasso#1288](https://github.com/service-lasso/service-lasso/pull/1288);
+do not merge this redirect before it is available. This repository retains the
+release package, manifest, endpoint, and verification contract below.
+
 ## Service Contract
 
 - Service ID: `openobserve`
